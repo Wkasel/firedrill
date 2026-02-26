@@ -15,25 +15,38 @@ import type { Contact } from "../models/contact.js";
 /**
  * Fetch all contacts from Contacts.app.
  * Returns contacts with at least one phone number.
+ *
+ * Uses batch property access (name of every person) instead of looping,
+ * which is orders of magnitude faster for large address books.
  */
 export async function fetchAllContacts(): Promise<Contact[]> {
   const script = `
     tell application "Contacts"
+      set fnList to first name of every person
+      set lnList to last name of every person
+      set pCount to count of fnList
       set output to ""
-      repeat with p in people
-        set fn to first name of p as text
-        set ln to last name of p as text
-        -- Collect all phone values
+      repeat with i from 1 to pCount
+        set fn to ""
+        set ln to ""
+        try
+          set fn to item i of fnList as text
+        end try
+        try
+          set ln to item i of lnList as text
+        end try
+        set p to person i
         set phoneList to ""
         repeat with ph in phones of p
           if phoneList is not "" then set phoneList to phoneList & ","
           set phoneList to phoneList & (value of ph as text)
         end repeat
-        -- Get first email if any
         set em to ""
-        if (count of emails of p) > 0 then
-          set em to value of first email of p as text
-        end if
+        try
+          if (count of emails of p) > 0 then
+            set em to value of first email of p as text
+          end if
+        end try
         if phoneList is not "" then
           set output to output & fn & "\t" & ln & "\t" & phoneList & "\t" & em & "\n"
         end if
@@ -42,7 +55,50 @@ export async function fetchAllContacts(): Promise<Contact[]> {
     end tell
   `;
 
-  const raw = await runAppleScript(script, 60_000);
+  const raw = await runAppleScript(script, 120_000);
+  return parseTsv(raw);
+}
+
+/**
+ * Search for contacts by name using Contacts.app's `whose` filter.
+ * Much faster than fetching all contacts when you only need a few.
+ */
+export async function searchContacts(term: string): Promise<Contact[]> {
+  const safeTerm = escapeAppleScript(term);
+
+  const script = `
+    tell application "Contacts"
+      set matchedPeople to every person whose name contains "${safeTerm}"
+      set output to ""
+      repeat with p in matchedPeople
+        set fn to ""
+        set ln to ""
+        try
+          set fn to first name of p as text
+        end try
+        try
+          set ln to last name of p as text
+        end try
+        set phoneList to ""
+        repeat with ph in phones of p
+          if phoneList is not "" then set phoneList to phoneList & ","
+          set phoneList to phoneList & (value of ph as text)
+        end repeat
+        set em to ""
+        try
+          if (count of emails of p) > 0 then
+            set em to value of first email of p as text
+          end if
+        end try
+        if phoneList is not "" then
+          set output to output & fn & "\t" & ln & "\t" & phoneList & "\t" & em & "\n"
+        end if
+      end repeat
+      return output
+    end tell
+  `;
+
+  const raw = await runAppleScript(script, 30_000);
   return parseTsv(raw);
 }
 
@@ -59,17 +115,25 @@ export async function fetchContactsByGroup(
       set g to first group whose name is "${safeGroup}"
       set output to ""
       repeat with p in people of g
-        set fn to first name of p as text
-        set ln to last name of p as text
+        set fn to ""
+        set ln to ""
+        try
+          set fn to first name of p as text
+        end try
+        try
+          set ln to last name of p as text
+        end try
         set phoneList to ""
         repeat with ph in phones of p
           if phoneList is not "" then set phoneList to phoneList & ","
           set phoneList to phoneList & (value of ph as text)
         end repeat
         set em to ""
-        if (count of emails of p) > 0 then
-          set em to value of first email of p as text
-        end if
+        try
+          if (count of emails of p) > 0 then
+            set em to value of first email of p as text
+          end if
+        end try
         if phoneList is not "" then
           set output to output & fn & "\t" & ln & "\t" & phoneList & "\t" & em & "\n"
         end if
@@ -78,7 +142,7 @@ export async function fetchContactsByGroup(
     end tell
   `;
 
-  const raw = await runAppleScript(script, 60_000);
+  const raw = await runAppleScript(script, 120_000);
   return parseTsv(raw, groupName);
 }
 

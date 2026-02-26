@@ -11,6 +11,7 @@ import {
   fetchAllContacts,
   fetchContactsByGroup,
   fetchGroups,
+  searchContacts,
 } from "../core/apple-contacts.js";
 import { parseVCard } from "../import/vcard-parser.js";
 import { parseCsv } from "../import/csv-parser.js";
@@ -43,20 +44,22 @@ export function registerContactsCommand(program: Command): void {
 
         if (opts.import) {
           contacts = await loadFromFile(opts.import);
+          // For imported files, filter in JS since there's no server-side search
+          if (opts.search) {
+            const term = opts.search.toLowerCase();
+            contacts = contacts.filter(
+              (c) =>
+                c.firstName.toLowerCase().includes(term) ||
+                c.lastName.toLowerCase().includes(term),
+            );
+          }
         } else if (opts.group) {
           contacts = await fetchContactsByGroup(opts.group);
+        } else if (opts.search) {
+          // Use Contacts.app `whose` filter — much faster than fetching all
+          contacts = await searchContacts(opts.search);
         } else {
           contacts = await fetchAllContacts();
-        }
-
-        // Apply name search filter
-        if (opts.search) {
-          const term = opts.search.toLowerCase();
-          contacts = contacts.filter(
-            (c) =>
-              c.firstName.toLowerCase().includes(term) ||
-              c.lastName.toLowerCase().includes(term),
-          );
         }
 
         if (opts.json) {
