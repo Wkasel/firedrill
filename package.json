@@ -1,0 +1,27 @@
+{
+  "name": "firedrill",
+  "version": "0.1.0",
+  "description": "CLI tool to broadcast iMessages via macOS Messages.app",
+  "type": "module",
+  "bin": {
+    "firedrill": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
