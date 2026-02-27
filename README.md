@@ -9,7 +9,7 @@ A CLI tool for broadcasting iMessages via macOS Messages.app. Load contacts from
 One-liner (auto-installs Homebrew and Node.js if needed):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wkasel/firedrill/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wkasel/firedrill/main/install.sh -o /tmp/firedrill-install.sh && bash /tmp/firedrill-install.sh
 ```
 
 Or manually:

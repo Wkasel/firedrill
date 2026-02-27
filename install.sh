@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # FireDrill installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/wkasel/firedrill/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/wkasel/firedrill/main/install.sh -o /tmp/firedrill-install.sh && bash /tmp/firedrill-install.sh
 
 set -euo pipefail
 
@@ -27,9 +27,7 @@ if ! command -v brew &>/dev/null; then
     exit 1
   fi
   echo "==> Homebrew not found — installing (you will be prompted for your password)..."
-  # Redirect stdin from /dev/tty so the Homebrew installer can prompt for
-  # the sudo password even when this script is piped via curl | bash.
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/tty
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
   # Add brew to PATH for the rest of this script (Apple Silicon vs Intel)
   if [[ -f /opt/homebrew/bin/brew ]]; then
