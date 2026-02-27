@@ -37,7 +37,7 @@ if (( NEED_NODE )); then
   PKG_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}.pkg"
 
   echo "    Downloading ${NODE_VERSION}..."
-  curl -fsSL "$PKG_URL" -o /tmp/node-latest.pkg
+  curl -fL# "$PKG_URL" -o /tmp/node-latest.pkg
 
   echo "    Installing (requires admin password)..."
   sudo installer -pkg /tmp/node-latest.pkg -target /
