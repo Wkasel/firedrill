@@ -26,8 +26,10 @@ if ! command -v brew &>/dev/null; then
     echo "Then re-run this installer."
     exit 1
   fi
-  echo "==> Homebrew not found — installing (you may be prompted for your password)..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  echo "==> Homebrew not found — installing (you will be prompted for your password)..."
+  # Redirect stdin from /dev/tty so the Homebrew installer can prompt for
+  # the sudo password even when this script is piped via curl | bash.
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/tty
 
   # Add brew to PATH for the rest of this script (Apple Silicon vs Intel)
   if [[ -f /opt/homebrew/bin/brew ]]; then
