@@ -18,6 +18,14 @@ fi
 
 # --- Check / install Homebrew ---
 if ! command -v brew &>/dev/null; then
+  # Homebrew requires the user to be an admin
+  if ! dseditgroup -o checkmember -m "$(whoami)" admin &>/dev/null; then
+    echo "Error: Homebrew requires an admin account to install."
+    echo "Either log in as an admin user, or ask an admin to run:"
+    echo "  sudo dseditgroup -o edit -a $(whoami) -t user admin"
+    echo "Then re-run this installer."
+    exit 1
+  fi
   echo "==> Homebrew not found — installing (you may be prompted for your password)..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
