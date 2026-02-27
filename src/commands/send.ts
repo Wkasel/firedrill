@@ -28,6 +28,7 @@ interface SendOptions {
   to?: string;
   group?: string;
   import?: string;
+  all?: boolean;
   message: string;
   delay?: string;
   maxPerHour?: string;
@@ -46,6 +47,7 @@ export function registerSendCommand(program: Command): void {
     .option("-t, --to <phone>", "Single recipient phone number")
     .option("-g, --group <name>", "Send to all contacts in a Contacts.app group")
     .option("-i, --import <path>", "Send to contacts from a .vcf or .csv file")
+    .option("-a, --all", "Send to all contacts with a phone number")
     .option("-d, --delay <ms>", "Delay between messages in ms")
     .option("--max-per-hour <n>", "Maximum messages per hour")
     .option("--dry-run", "Preview messages without sending")
@@ -53,9 +55,9 @@ export function registerSendCommand(program: Command): void {
     .action(async (opts: SendOptions) => {
       try {
         // Validate that at least one recipient source is specified
-        if (!opts.to && !opts.group && !opts.import) {
+        if (!opts.to && !opts.group && !opts.import && !opts.all) {
           console.error(
-            "Error: specify at least one recipient with --to, --group, or --import",
+            "Error: specify at least one recipient with --to, --group, --import, or --all",
           );
           process.exit(1);
         }
@@ -141,6 +143,10 @@ async function resolveContacts(opts: SendOptions): Promise<Contact[]> {
 
   if (opts.group) {
     return fetchContactsByGroup(opts.group);
+  }
+
+  if (opts.all) {
+    return fetchAllContacts();
   }
 
   return fetchAllContacts();
