@@ -6,12 +6,18 @@ A CLI tool for broadcasting iMessages via macOS Messages.app. Load contacts from
 
 ## Install
 
+One-liner:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yourusername/firedrill/main/install.sh | bash
+```
+
+Or manually:
+
 ```bash
 git clone https://github.com/yourusername/firedrill.git
 cd firedrill
-npm install
-npm run build
-npm link  # makes `firedrill` available globally
+npm install && npm run build && npm link
 ```
 
 Or run directly without installing:
@@ -133,6 +139,13 @@ npm run test:watch # watch mode
 npm run dev -- <command>  # run without building
 ```
 
+### Claude Code Integration
+
+FireDrill ships with a `CLAUDE.md` that gives Claude Code full context on commands, flags, and architecture. Two hooks in `.claude/settings.json` make agent usage seamless:
+
+- **Auto-confirm** — automatically adds `-y` to `firedrill send` commands so the interactive prompt doesn't hang the agent
+- **Send logging** — appends each send to `.firedrill-send-log.txt` for session-level auditability
+
 ## License
 
-MIT
+[MIT](LICENSE)
