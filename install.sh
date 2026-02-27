@@ -74,7 +74,8 @@ echo "==> Building..."
 npm run build
 
 echo "==> Linking globally..."
-sudo npm link
+sudo ln -sf "$SRC_DIR/dist/index.js" /usr/local/bin/firedrill
+sudo chmod +x /usr/local/bin/firedrill
 
 echo ""
 echo "==> FireDrill installed successfully!"
