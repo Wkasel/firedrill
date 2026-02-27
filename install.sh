@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # FireDrill installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/yourusername/firedrill/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/wkasel/firedrill/main/install.sh | bash
 
 set -euo pipefail
 
-REPO_URL="https://github.com/yourusername/firedrill.git"
+REPO_URL="https://github.com/wkasel/firedrill.git"
 INSTALL_DIR="$HOME/.firedrill-src"
 
 echo "==> FireDrill installer"
@@ -16,24 +16,43 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
-# --- Check Node.js ---
+# --- Check / install Homebrew ---
+if ! command -v brew &>/dev/null; then
+  echo "==> Homebrew not found — installing (you may be prompted for your password)..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  # Add brew to PATH for the rest of this script (Apple Silicon vs Intel)
+  if [[ -f /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [[ -f /usr/local/bin/brew ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+fi
+echo "    Homebrew $(brew --version | head -1 | awk '{print $2}') ✓"
+
+# --- Check / install Node.js 20+ ---
+NEED_NODE=0
 if ! command -v node &>/dev/null; then
-  echo "Error: Node.js is required but not installed."
-  echo "Install it from https://nodejs.org/ or via: brew install node"
-  exit 1
+  NEED_NODE=1
+else
+  NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.')[0]))")
+  if (( NODE_MAJOR < 20 )); then
+    NEED_NODE=2
+  fi
 fi
 
-NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.')[0]))")
-if (( NODE_MAJOR < 20 )); then
-  echo "Error: Node.js >= 20 required (found v$(node -v))."
-  echo "Update via: brew upgrade node"
-  exit 1
+if (( NEED_NODE == 1 )); then
+  echo "==> Node.js not found — installing via Homebrew..."
+  brew install node
+elif (( NEED_NODE == 2 )); then
+  echo "==> Node.js $(node -v) is too old (need 20+) — upgrading via Homebrew..."
+  brew upgrade node
 fi
 echo "    Node.js v$(node -v | tr -d 'v') ✓"
 
 # --- Check npm ---
 if ! command -v npm &>/dev/null; then
-  echo "Error: npm is required but not installed."
+  echo "Error: npm is required but not found (should have been installed with Node)."
   exit 1
 fi
 echo "    npm v$(npm -v) ✓"
