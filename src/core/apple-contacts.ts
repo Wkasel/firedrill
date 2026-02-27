@@ -25,7 +25,7 @@ export async function fetchAllContacts(): Promise<Contact[]> {
       set fnList to first name of every person
       set lnList to last name of every person
       set pCount to count of fnList
-      set output to ""
+      set outputList to {}
       repeat with i from 1 to pCount
         set fn to ""
         set ln to ""
@@ -48,14 +48,15 @@ export async function fetchAllContacts(): Promise<Contact[]> {
           end if
         end try
         if phoneList is not "" then
-          set output to output & fn & "\t" & ln & "\t" & phoneList & "\t" & em & "\n"
+          set end of outputList to fn & "\t" & ln & "\t" & phoneList & "\t" & em
         end if
       end repeat
-      return output
+      set AppleScript's text item delimiters to "\n"
+      return outputList as text
     end tell
   `;
 
-  const raw = await runAppleScript(script, 120_000);
+  const raw = await runAppleScript(script, 300_000);
   return parseTsv(raw);
 }
 
