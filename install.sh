@@ -74,7 +74,7 @@ echo "==> Building..."
 npm run build
 
 echo "==> Linking globally..."
-npm link
+sudo npm link
 
 echo ""
 echo "==> FireDrill installed successfully!"
