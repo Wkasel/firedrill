@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# FireDrill installer
+# FireDrill installer — works on a fresh Mac with no dev tools
 # Usage: curl -fsSL https://raw.githubusercontent.com/wkasel/firedrill/main/install.sh -o /tmp/firedrill-install.sh && bash /tmp/firedrill-install.sh
 
 set -euo pipefail
 
-REPO_URL="https://github.com/wkasel/firedrill.git"
+REPO_TARBALL="https://github.com/wkasel/firedrill/archive/refs/heads/main.tar.gz"
 INSTALL_DIR="$HOME/.firedrill-src"
 
 echo "==> FireDrill installer"
@@ -16,68 +16,52 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
-# --- Check / install Homebrew ---
-if ! command -v brew &>/dev/null; then
-  # Homebrew requires the user to be an admin
-  if ! dseditgroup -o checkmember -m "$(whoami)" admin &>/dev/null; then
-    echo "Error: Homebrew requires an admin account to install."
-    echo "Either log in as an admin user, or ask an admin to run:"
-    echo "  sudo dseditgroup -o edit -a $(whoami) -t user admin"
-    echo "Then re-run this installer."
-    exit 1
-  fi
-  echo "==> Homebrew not found — installing (you will be prompted for your password)..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-  # Add brew to PATH for the rest of this script (Apple Silicon vs Intel)
-  if [[ -f /opt/homebrew/bin/brew ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [[ -f /usr/local/bin/brew ]]; then
-    eval "$(/usr/local/bin/brew shellenv)"
-  fi
-fi
-echo "    Homebrew $(brew --version | head -1 | awk '{print $2}') ✓"
-
-# --- Check / install Node.js 20+ ---
+# --- Check / install Node.js 20+ via official .pkg ---
 NEED_NODE=0
 if ! command -v node &>/dev/null; then
   NEED_NODE=1
 else
   NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.')[0]))")
   if (( NODE_MAJOR < 20 )); then
-    NEED_NODE=2
+    NEED_NODE=1
   fi
 fi
 
-if (( NEED_NODE == 1 )); then
-  echo "==> Node.js not found — installing via Homebrew..."
-  brew install node
-elif (( NEED_NODE == 2 )); then
-  echo "==> Node.js $(node -v) is too old (need 20+) — upgrading via Homebrew..."
-  brew upgrade node
+if (( NEED_NODE )); then
+  echo "==> Node.js 20+ not found — installing from nodejs.org..."
+  echo "    (you will be prompted for your password)"
+
+  # Resolve latest Node 22 LTS version
+  NODE_VERSION=$(curl -fsSL https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt \
+    | grep -o 'node-v[0-9.]*' | head -1 | sed 's/node-//')
+  PKG_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}.pkg"
+
+  echo "    Downloading ${NODE_VERSION}..."
+  curl -fsSL "$PKG_URL" -o /tmp/node-latest.pkg
+
+  echo "    Installing (requires admin password)..."
+  sudo installer -pkg /tmp/node-latest.pkg -target /
+  rm -f /tmp/node-latest.pkg
 fi
-echo "    Node.js v$(node -v | tr -d 'v') ✓"
+echo "    Node.js $(node -v) ✓"
 
 # --- Check npm ---
 if ! command -v npm &>/dev/null; then
-  echo "Error: npm is required but not found (should have been installed with Node)."
+  echo "Error: npm not found (should have been installed with Node)."
   exit 1
 fi
 echo "    npm v$(npm -v) ✓"
 
-# --- Determine source directory ---
+# --- Download source ---
 # If we're already in a firedrill repo (has package.json with name "firedrill"), use it
 if [[ -f "package.json" ]] && python3 -c "import json; exit(0 if json.load(open('package.json')).get('name')=='firedrill' else 1)" 2>/dev/null; then
   echo "==> Using current directory as source"
   SRC_DIR="$(pwd)"
 else
-  echo "==> Cloning firedrill..."
-  if [[ -d "$INSTALL_DIR" ]]; then
-    echo "    Updating existing clone..."
-    git -C "$INSTALL_DIR" pull --ff-only
-  else
-    git clone "$REPO_URL" "$INSTALL_DIR"
-  fi
+  echo "==> Downloading firedrill..."
+  rm -rf "$INSTALL_DIR"
+  mkdir -p "$INSTALL_DIR"
+  curl -fsSL "$REPO_TARBALL" | tar xz --strip-components=1 -C "$INSTALL_DIR"
   SRC_DIR="$INSTALL_DIR"
 fi
 
